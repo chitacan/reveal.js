@@ -33,17 +33,16 @@
     };
 
     var connect = function(initData) {
-
-      head.js(
-        '/socket.io/socket.io.js',
-        function() {
-          var sio = io.connect(pollServer + server);
-          sio.on('connect', function() {
-            console.log('socket.io connected');
-          });
-          sio.emit('master_ready', initData);
-        }
-      );
+      var sio = io.connect(pollServer + server);
+      sio.on('connect', function() {
+        console.log('socket.io connected');
+      });
+      sio.on('client_vote', function(data) {
+        console.log('client_vote ');
+        console.dir(data);
+        fallbackChart.render(currentSlide, data);
+      });
+      sio.emit('master_ready', initData);
     };
 
     var sendToServer = function (surveyInfo) {
@@ -123,8 +122,16 @@
 
     var init = function(slide) {
       currentSlide = slide;
-      sendToServer(getSurveyInfo(currentSlide));
-      listenToServer();
+      head.js(
+        '/socket.io/socket.io.js',
+        '/plugin/repoll/fallback-renderer.js',
+        function() {
+          var info = getSurveyInfo(currentSlide);
+          sendToServer(info);
+          fallbackChart.init(info);
+          listenToServer();
+        }
+      );
     };
 
     return {
